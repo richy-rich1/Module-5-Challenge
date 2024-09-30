@@ -1,0 +1,226 @@
+CRLF stands for "Carriage Return, Line Feed". It's a sequence of two characters often used to signify the end of a line in text files, especially in Windows operating systems. Here's a brief explanation:
+
+CR (Carriage Return): Represented by \r, it moves the cursor to the beginning of the line.
+LF (Line Feed): Represented by \n, it moves the cursor down to the next line.
+
+In different contexts:
+
+Windows typically uses CRLF (\r\n) for line endings.
+Unix/Linux systems typically use just LF (\n).
+Old Mac systems (pre-OSX) used just CR (\r).
+
+In programming, you might encounter CRLF issues when:
+
+Working with text files across different operating systems
+Dealing with version control systems (like Git)
+Processing strings that contain line breaks
+
+To handle CRLF in Python, you can use:
+# Checking the number of mice.
+number_mice = combined_df["Mouse ID"].nunique()
+number_mice
+
+# Our data should be uniquely identified by Mouse ID and Timepoint
+# Get the duplicate mice by ID number that shows up for Mouse ID and Timepoint.
+dup_ID_mice = combined_df.loc[combined_df.duplicated(subset=['Mouse ID', 'Timepoint']),'Mouse ID'].unique()
+dup_ID_mice
+# Optional: Get all the data for the duplicate mouse ID.
+dup_ID_mice_df = combined_df.loc[combined_df["Mouse ID"] == "g989", :]
+dup_ID_mice_df
+# Create a clean DataFrame by dropping the duplicate mouse by its ID.
+clean_df = combined_df[combined_df['Mouse ID'].isin(dup_ID_mice)==False]
+clean_df.head()
+
+# Checking the number of mice in the clean DataFrame.
+clean_num = clean_df["Mouse ID"].nunique()
+clean_num
+# Generate a summary statistics table of mean, median, variance, standard deviation, and SEM of the tumor volume for each regimen
+
+# Use groupby and summary statistical methods to calculate the following properties of each drug regimen:
+# mean, median, variance, standard deviation, and SEM of the tumor volume.
+# Assemble the resulting series into a single summary DataFrame.
+mean = clean_df['Tumor Volume (mm3)'].groupby(clean_df['Drug Regimen']).mean()
+median = clean_df['Tumor Volume (mm3)'].groupby(clean_df['Drug Regimen']).median()
+var = clean_df['Tumor Volume (mm3)'].groupby(clean_df['Drug Regimen']).var()
+std = clean_df['Tumor Volume (mm3)'].groupby(clean_df['Drug Regimen']).std()
+sem = clean_df['Tumor Volume (mm3)'].groupby(clean_df['Drug Regimen']).sem()
+
+sum_stat_df = pd.DataFrame({"Mean Tumor Volum":mean,
+                         "Median Tumor Volum":median,
+                         "Tumor Volume Variance":var,
+                         "Tumor Volume Std. Dev.":std,
+                         "Tumor Volume Std. Err.":sem})
+sum_stat_df
+# A more advanced method to generate a summary statistics table of mean, median, variance, standard deviation,
+# and SEM of the tumor volume for each regimen (only one method is required in the solution)
+
+# Using the aggregation method, produce the same summary statistics in a single line
+# Generating summary statistics using the aggregation method
+
+sum_agg = clean_df.groupby(['Drug Regimen'])[['Tumor Volume (mm3)']].agg(['mean', 'median', 'var', 'std', 'sem'])
+sum_agg
+
+# Generate a bar plot showing the total number of rows (Mouse ID/Timepoints) for each drug regimen using pyplot.
+# Generate a bar plot showing the total number of rows (Mouse ID/Timepoints) for each drug regimen using Pandas.
+number_mice = clean_df["Drug Regimen"].value_counts()
+number_mice
+
+plot_pandas = number_mice.plot.bar(color='b')
+plt.xlabel("Drug Regimen")
+plt.ylabel("Number of Mice")
+plt.title("Number of Mice Per Treatment")
+# Generate a pie chart, using Pandas, showing the distribution of unique female versus male mice used in the study
+
+x_axis = number_mice.index.values
+y_axis = number_mice.values
+plt.bar(x_axis, y_axis, color='b', alpha=0.8, align='center')
+plt.xlabel("Drug Regimen")
+plt.ylabel("Number of Mice")
+plt.title("Number of Mice Tested Per Treatment")
+plt.xticks(rotation="vertical")
+plt.show()
+# Generate a pie chart, using pyplot, showing the distribution of unique female versus male mice used in the study
+
+# Get the unique mice with their gender
+
+# Make the pie chart
+mice_gender = clean_df["Sex"].value_counts()
+mice_gender.plot.pie(autopct = "%1.1f%%")
+plt.title("Unique Female vs. Male")
+plt.show()
+# Calculate the final tumor volume of each mouse across four of the treatment regimens:
+# Capomulin, Ramicane, Infubinol, and Ceftamin
+
+# Start by getting the last (greatest) timepoint for each mouse
+
+
+# Merge this group df with the original DataFrame to get the tumor volume at the last timepoint
+capomulin_df = clean_df.loc[clean_df["Drug Regimen"] == "Capomulin",:]
+ramicane_df = clean_df.loc[clean_df["Drug Regimen"] == "Ramicane",:]
+infubinol_df = clean_df.loc[clean_df["Drug Regimen"] == "Infubinol",:]
+ceftamin_df = clean_df.loc[clean_df["Drug Regimen"] == "Ceftamin",:]
+capomulin_last = capomulin_df.groupby('Mouse ID').max()['Timepoint']
+capomulin_vol = pd.DataFrame(capomulin_last)
+capomulin_merge = pd.merge(capomulin_vol, clean_df, on=("Mouse ID", "Timepoint"), how="left")
+capomulin_merge.head()
+capomulin_tumor = capomulin_merge["Tumor Volume (mm3)"]
+
+quartiles = capomulin_tumor.quantile([.25,.5,.75])
+lowerq = quartiles[0.25]
+upperq = quartiles[0.75]
+iqr = upperq-lowerq
+
+print(f"The lower quartile of Capomulin tumor is:{lowerq}")
+print(f"The upper quartile of Capomulin tumors: {upperq}")
+print(f"The interquartile range of Capomulin tumors: {iqr}")
+print(f"The median of Capomulin tumors: {quartiles[0.5]} ")
+
+lower_bound = lowerq - (1.5*iqr)
+upper_bound = upperq + (1.5*iqr)
+
+print(f"Values below {lower_bound} could be outliers.")
+print(f"Values above {upper_bound} could be outliers.")
+infubinol_last_timepoint = infubinol_df.groupby('Mouse ID').max()['Timepoint']
+infubinol_vol = pd.DataFrame(infubinol_last_timepoint)
+infubinol_merge = pd.merge(infubinol_vol, clean_df, on=("Mouse ID","Timepoint"),how="left")
+infubinol_merge.head()
+
+infubinol_tumor = infubinol_merge["Tumor Volume (mm3)"]
+
+quartiles = infubinol_tumor.quantile([.25,.5,.75])
+lowerq = quartiles[0.25]
+upperq = quartiles[0.75]
+iqr = upperq - lowerq
+
+print(f"The lower quartile of Infubinol tumors is: {lowerq}")
+print(f"The upper quartile of Infubinol tumors is: {upperq}")
+print(f"The interquartile range of Infubinol tumors is: {iqr}")
+print(f"The median of Infubinol tumors is: {quartiles[0.5]} ")
+
+lower_bound = lowerq - (1.5*iqr)
+upper_bound = upperq + (1.5*iqr)
+
+print(f"Values below {lower_bound} could be outliers.")
+print(f"Values above {upper_bound} could be outliers.")
+ceftamin_last_timepoint = ceftamin_df.groupby('Mouse ID').max()['Timepoint']
+ceftamin_vol = pd.DataFrame(ceftamin_last_timepoint)
+ceftamin_merge = pd.merge(ceftamin_vol, clean_df, on=("Mouse ID","Timepoint"),how="left")
+ceftamin_merge.head()
+# Put treatments into a list for for loop (and later for plot labels)
+# Create empty list to fill with tumor vol data (for plotting)
+# Calculate the IQR and quantitatively determine if there are any potential outliers.
+    # Locate the rows which contain mice on each drug and get the tumor volumes
+    # add subset
+    # Determine outliers using upper and lower bounds
+drug_list = ["Capomulin", "Ramicane", "Infubinol", "Ceftamin"]
+drugs = combined_df[combined_df["Drug Regimen"].isin(drug_list)]
+drugs.head()
+# Generate a box plot that shows the distribution of the tumor volume for each treatment group.
+last_timepoint = drugs.groupby(["Drug Regimen", "Mouse ID"]).agg(tumor_size=("Tumor Volume (mm3)", lambda x: x.iloc[-1]))
+last_timepoint = last_timepoint.stack(level=0).unstack(level=0)
+for drug in drug_list:
+    print(drug)
+treatment = 0
+for drug in drug_list:
+    quartiles = last_timepoint[drug].quantile([.25,.5,.75]).round(2)
+    lowerq = quartiles[0.25].round(2)
+    upperq = quartiles[0.75].round(2)
+    iqr = round(upperq - lowerq,2)
+    lower_bound = round(lowerq- (1.5*iqr),2)
+    upper_bound = round(upperq + (1.5*iqr),2)
+
+    if treatment==0:
+        print(f"------------------------------------------")
+    print(f"The lower quartile of {drug} treatments is: {lowerq}")
+    print(f"The upper quartile of {drug} treatments is: {upperq}")
+    print(f"The interquartile range of {drug} treatments is: {iqr}")
+    print(f"Values below {lower_bound} could be {drug} outliers.")
+    print(f"Values above {upper_bound} could be {drug} outliers.")
+    print(f"------------------------------------------------------------")
+    treatment+=1
+# Generate a box plot that shows the distribution of the tumor volume for each treatment group.
+box_plot = [capomulin_tumor, ramicane_tumor, infubinol_tumor, ceftamin_tumor]
+regimen = ['Capomulin', 'Ramicane', 'Infubinol','Ceftamin']
+
+fig1,ax1 = plt.subplots()
+ax1.set_title('Tumor Volume At Each Treatment Mouse')
+ax1.set_ylabel('Tumor Volume (mm3)')
+ax1.set_xlabel('Drug Regimen')
+ax1.boxplot(box_plot, labels=regimen, widths = 0.4, vert=True)
+plt.show()
+# Generate a line plot of tumor volume vs. time point for a single mouse treated with Capomulin
+line_plot_df = capomulin_df.loc[capomulin_df["Mouse ID"] == "b128",:]
+line_plot_df.head()
+x_axis = line_plot_df["Timepoint"]
+size_tumor = line_plot_df["Tumor Volume (mm3)"]
+
+fig1, ax1 = plt.subplots()
+plt.title('Capomulin Treatment of Mouse ID b128')
+plt.plot(x_axis, size_tumor, linewidth=2, markersize=15, marker="o", color="blue", label="Fahrenheit")
+plt.xlabel('Timepoint (Days)')
+plt.ylabel('Tumor Volume (mm3)')
+# Generate a scatter plot of mouse weight vs. the average observed tumor volume for the entire Capomulin regimen
+fig1, ax1 = plt.subplots(figsize=(15,10))
+avg_tumor_vol = clean_df.loc[clean_df['Drug Regimen']=="Capomulin",:].groupby('Mouse ID')[["Weight (g)","Tumor Volume (mm3)"]].mean()
+
+marker_size = 15
+plt.scatter(avg_tumor_vol['Weight (g)'],avg_tumor_vol['Tumor Volume (mm3)'],s=175, color="blue")
+plt.title('Mouse Weight Versus Average Tumor Volume',fontsize =25)
+plt.xlabel('Weight (g)',fontsize =14)
+
+plt.ylabel('Averag Tumor Volume (mm3)',fontsize =14)
+# Calculate the correlation coefficient and a linear regression model
+# for mouse weight and average observed tumor volume for the entire Capomulin regimen
+from scipy.stats import linregress
+(slope, intercept,rvalue, pvalue, stderr)= linregress(avg_tumor_vol["Weight (g)"],avg_tumor_vol["Tumor Volume (mm3)"])
+regress_values= avg_tumor_vol["Weight (g)"]* slope + intercept
+line_eq= f"y = {round(slope, 2)} x + {round(intercept, 2)}"
+
+plt.scatter(avg_tumor_vol["Weight (g)"],avg_tumor_vol["Tumor Volume (mm3)"],color='b')
+plt.plot(avg_tumor_vol["Weight (g)"], regress_values, color='red')
+plt.annotate(line_eq,(20,36), fontsize=14)
+plt.xlabel("Weight (g)")
+plt.ylabel("Tumor Volume (mm3)")
+plt.title("Weight vs Tumor Volume for Capomulin")
+print(f"The r-squared is: {round(rvalue**2,3)}")
+plt.show()
